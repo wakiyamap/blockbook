@@ -11,6 +11,7 @@ import (
 	"blockbook/bchain/coins/eth"
 	"blockbook/bchain/coins/gamecredits"
 	"blockbook/bchain/coins/grs"
+	"blockbook/bchain/coins/kumacoin"
 	"blockbook/bchain/coins/litecoin"
 	"blockbook/bchain/coins/monacoin"
 	"blockbook/bchain/coins/myriad"
@@ -59,6 +60,8 @@ func init() {
 	BlockChainFactories["Myriad"] = myriad.NewMyriadRPC
 	BlockChainFactories["Groestlcoin"] = grs.NewGroestlcoinRPC
 	BlockChainFactories["Groestlcoin Testnet"] = grs.NewGroestlcoinRPC
+	BlockChainFactories["Kumacoin"] = grs.NewKumacoinRPC
+	BlockChainFactories["Kumacoin Testnet"] = grs.NewKumacoinRPC
 }
 
 // GetCoinNameFromConfig gets coin name and coin shortcut from config file
