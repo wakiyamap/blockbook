@@ -60,8 +60,8 @@ func init() {
 	BlockChainFactories["Myriad"] = myriad.NewMyriadRPC
 	BlockChainFactories["Groestlcoin"] = grs.NewGroestlcoinRPC
 	BlockChainFactories["Groestlcoin Testnet"] = grs.NewGroestlcoinRPC
-	BlockChainFactories["Kumacoin"] = grs.NewKumacoinRPC
-	BlockChainFactories["Kumacoin Testnet"] = grs.NewKumacoinRPC
+	BlockChainFactories["Kumacoin"] = kumacoin.NewKumacoinRPC
+	BlockChainFactories["Kumacoin Testnet"] = kumacoin.NewKumacoinRPC
 }
 
 // GetCoinNameFromConfig gets coin name and coin shortcut from config file
