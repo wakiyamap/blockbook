@@ -109,7 +109,7 @@ func newGetRequest(u string) *http.Request {
 	return r
 }
 
-func newPostRequest(u string, formdata ...string) *http.Request {
+func newPostFormRequest(u string, formdata ...string) *http.Request {
 	form := url.Values{}
 	for i := 0; i < len(formdata)-1; i += 2 {
 		form.Add(formdata[i], formdata[i+1])
@@ -119,6 +119,15 @@ func newPostRequest(u string, formdata ...string) *http.Request {
 		glog.Fatal(err)
 	}
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	return r
+}
+
+func newPostRequest(u string, body string) *http.Request {
+	r, err := http.NewRequest("POST", u, strings.NewReader(body))
+	if err != nil {
+		glog.Fatal(err)
+	}
+	r.Header.Add("Content-Type", "application/octet-stream")
 	return r
 }
 
@@ -331,14 +340,14 @@ func httpTests(t *testing.T, ts *httptest.Server) {
 		},
 		{
 			name:        "explorerSendTx POST",
-			r:           newPostRequest(ts.URL+"/sendtx", "hex", "12341234"),
+			r:           newPostFormRequest(ts.URL+"/sendtx", "hex", "12341234"),
 			status:      http.StatusOK,
 			contentType: "text/html; charset=utf-8",
 			body: []string{
 				`<a href="/" class="nav-link">Fake Coin Explorer</a>`,
 				`<h1>Send Raw Transaction</h1>`,
 				`<textarea class="form-control" rows="8" name="hex">12341234</textarea>`,
-				`<div class="alert alert-danger">Not implemented</div></div>`,
+				`<div class="alert alert-danger">Invalid data</div>`,
 				`</html>`,
 			},
 		},
@@ -369,13 +378,13 @@ func httpTests(t *testing.T, ts *httptest.Server) {
 			status:      http.StatusOK,
 			contentType: "application/json; charset=utf-8",
 			body: []string{
-				`{"txid":"05e2e48aeabdd9b75def7b48d756ba304713c2aba7b522bf9dbc893fc4231b07","vin":[{"txid":"effd9ef509383d536b1c8af5bf434c8efbf521a4f2befd4022bbd68694b4ac75","vout":2,"n":0,"scriptSig":{"hex":""},"addresses":["2NEVv9LJmAnY99W1pFoc5UJjVdypBqdnvu1"],"value":"0.00009876"}],"vout":[{"value":"0.00009","n":0,"scriptPubKey":{"hex":"a914e921fc4912a315078f370d959f2c4f7b6d2a683c87","addresses":["2NEVv9LJmAnY99W1pFoc5UJjVdypBqdnvu1"]}}],"blockhash":"00000000eb0443fd7dc4a1ed5c686a8e995057805f9a161d9a5a77a95e72b7b6","blockheight":225494,"confirmations":1,"time":22549400002,"blocktime":22549400002,"valueOut":"0.00009","valueIn":"0.00009876","fees":"0.00000876","hex":""}`,
+				`{"txid":"05e2e48aeabdd9b75def7b48d756ba304713c2aba7b522bf9dbc893fc4231b07","vin":[{"txid":"effd9ef509383d536b1c8af5bf434c8efbf521a4f2befd4022bbd68694b4ac75","vout":2,"n":0,"scriptSig":{"hex":""},"addresses":["2NEVv9LJmAnY99W1pFoc5UJjVdypBqdnvu1"],"value":"0.00009876"}],"vout":[{"value":"0.00009","n":0,"scriptPubKey":{"hex":"a914e921fc4912a315078f370d959f2c4f7b6d2a683c87","addresses":["2NEVv9LJmAnY99W1pFoc5UJjVdypBqdnvu1"]},"spent":false}],"blockhash":"00000000eb0443fd7dc4a1ed5c686a8e995057805f9a161d9a5a77a95e72b7b6","blockheight":225494,"confirmations":1,"time":22549400002,"blocktime":22549400002,"valueOut":"0.00009","valueIn":"0.00009876","fees":"0.00000876","hex":""}`,
 			},
 		},
 		{
 			name:        "apiTx - not found",
 			r:           newGetRequest(ts.URL + "/api/tx/1232e48aeabdd9b75def7b48d756ba304713c2aba7b522bf9dbc893fc4231b07"),
-			status:      http.StatusInternalServerError,
+			status:      http.StatusBadRequest,
 			contentType: "application/json; charset=utf-8",
 			body: []string{
 				`{"error":"Tx not found, Not found"}`,
@@ -400,12 +409,48 @@ func httpTests(t *testing.T, ts *httptest.Server) {
 			},
 		},
 		{
-			name:        "apiBlock",
-			r:           newGetRequest(ts.URL + "/api/block/225493"),
+			name:        "apiAddressUtxo",
+			r:           newGetRequest(ts.URL + "/api/utxo/mtR97eM2HPWVM6c8FGLGcukgaHHQv7THoL"),
 			status:      http.StatusOK,
 			contentType: "application/json; charset=utf-8",
 			body: []string{
-				`{"page":1,"totalPages":1,"itemsOnPage":1000,"hash":"0000000076fbbed90fd75b0e18856aa35baa984e9c9d444cf746ad85e94e2997","previousblockhash":"","nextblockhash":"","height":225493,"confirmations":2,"size":1234567,"time":1534858021,"version":0,"merkleroot":"","nonce":0,"bits":"","difficulty":0,"TxCount":2,"txs":[{"txid":"00b2c06055e5e90e9c82bd4181fde310104391a7fa4f289b1704e5d90caa3840","vin":[],"vout":[{"value":"1","n":0,"scriptPubKey":{"hex":"","addresses":["mfcWp7DB6NuaZsExybTTXpVgWz559Np4Ti"]}},{"value":"0.00012345","n":1,"scriptPubKey":{"hex":"","addresses":["mtGXQvBowMkBpnhLckhxhbwYK44Gs9eEtz"]}}],"blockhash":"0000000076fbbed90fd75b0e18856aa35baa984e9c9d444cf746ad85e94e2997","blockheight":225493,"confirmations":2,"time":1534858021,"blocktime":1534858021,"valueOut":"1.00012345","valueIn":"0","fees":"0","hex":""},{"txid":"effd9ef509383d536b1c8af5bf434c8efbf521a4f2befd4022bbd68694b4ac75","vin":[],"vout":[{"value":"12345.67890123","n":0,"scriptPubKey":{"hex":"","addresses":["mv9uLThosiEnGRbVPS7Vhyw6VssbVRsiAw"]}},{"value":"0.00000001","n":1,"scriptPubKey":{"hex":"","addresses":["2Mz1CYoppGGsLNUGF2YDhTif6J661JitALS"]}},{"value":"0.00009876","n":2,"scriptPubKey":{"hex":"","addresses":["2NEVv9LJmAnY99W1pFoc5UJjVdypBqdnvu1"]}}],"blockhash":"0000000076fbbed90fd75b0e18856aa35baa984e9c9d444cf746ad85e94e2997","blockheight":225493,"confirmations":2,"time":1534858021,"blocktime":1534858021,"valueOut":"12345.679","valueIn":"0","fees":"0","hex":""}]}`,
+				`[{"txid":"7c3be24063f268aaa1ed81b64776798f56088757641a34fb156c4f51ed2e9d25","vout":1,"amount":"9172.83951061","satoshis":917283951061,"height":225494,"confirmations":1}]`,
+			},
+		},
+		{
+			name:        "apiSendTx",
+			r:           newGetRequest(ts.URL + "/api/sendtx/1234567890"),
+			status:      http.StatusBadRequest,
+			contentType: "application/json; charset=utf-8",
+			body: []string{
+				`{"error":"Invalid data"}`,
+			},
+		},
+		{
+			name:        "apiSendTx POST",
+			r:           newPostRequest(ts.URL+"/api/sendtx/", "123456"),
+			status:      http.StatusOK,
+			contentType: "application/json; charset=utf-8",
+			body: []string{
+				`{"result":"9876"}`,
+			},
+		},
+		{
+			name:        "apiSendTx POST empty",
+			r:           newPostRequest(ts.URL+"/api/sendtx", ""),
+			status:      http.StatusBadRequest,
+			contentType: "application/json; charset=utf-8",
+			body: []string{
+				`{"error":"Missing tx blob"}`,
+			},
+		},
+		{
+			name:        "apiEstimateFee",
+			r:           newGetRequest(ts.URL + "/api/estimatefee/123?conservative=false"),
+			status:      http.StatusOK,
+			contentType: "application/json; charset=utf-8",
+			body: []string{
+				`{"result":"0.00012299"}`,
 			},
 		},
 	}
@@ -522,7 +567,7 @@ func socketioTests(t *testing.T, ts *httptest.Server) {
 		{
 			name: "sendTransaction",
 			req:  socketioReq{"sendTransaction", []interface{}{"010000000001019d64f0c72a0d206001decbffaa722eb1044534c"}},
-			want: `{"error":{"message":"Not implemented"}}`,
+			want: `{"error":{"message":"Invalid data"}}`,
 		},
 	}
 
