@@ -117,7 +117,7 @@ func (b *KumacoinRPC) GetChainInfo() (*bchain.ChainInfo, error) {
 		return nil, err
 	}
 	if res.Error != nil {
-		return nil, resI.Error
+		return nil, res.Error
 	}
 
 	hash, err := b.GetBlockHash(res.Result.Blocks)
