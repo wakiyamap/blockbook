@@ -72,7 +72,7 @@ type ResGetInfo struct {
 		ProtocolVersion json.Number `json:"protocolversion"`
 		Blocks          int32       `json:"blocks"`
 		Difficulty      json.Number `json:"difficulty"`
-		Testnet         string      `json:"testnet"`
+		Testnet         bool        `json:"testnet"`
 		Errors          string      `json:"errors"`
 	} `json:"result"`
 }
@@ -124,15 +124,22 @@ func (b *KumacoinRPC) GetChainInfo() (*bchain.ChainInfo, error) {
 		return nil, res.Error
 	}
 
-	hash, err := b.GetBlockHash(uint32(res.Result.Blocks))
+	bestBlockHash, err := b.GetBlockHash(uint32(res.Result.Blocks))
 	if err != nil {
 		return nil, err
 	}
-	
+
+	var chainType string
+	if res.Result.Testnet {
+		chainType = "test"
+	} else {
+		chainType = "main"
+	}
+
 	rv := &bchain.ChainInfo{
-		Bestblockhash: hash,
+		Bestblockhash: bestBlockHash,
 		Blocks:        int(res.Result.Blocks),
-		Chain:         res.Result.Testnet,
+		Chain:         chainType,
 		Difficulty:    string(res.Result.Difficulty),
 		Headers:       int(res.Result.Blocks),
 		SizeOnDisk:    0,
