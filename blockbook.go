@@ -44,8 +44,6 @@ var (
 	blockUntil     = flag.Int("blockuntil", -1, "height of the final block")
 	rollbackHeight = flag.Int("rollback", -1, "rollback to the given height and quit")
 
-	queryAddress = flag.String("address", "", "query contents of this address")
-
 	synchronize = flag.Bool("sync", false, "synchronizes until tip, if together with zeromq, keeps index synchronized")
 	repair      = flag.Bool("repair", false, "repair the database")
 	prof        = flag.String("prof", "", "http server binding [address]:port of the interface to profiling data /debug/pprof/ (default no profiling)")
@@ -67,6 +65,7 @@ var (
 	noTxCache = flag.Bool("notxcache", false, "disable tx cache")
 
 	computeColumnStats = flag.Bool("computedbstats", false, "compute column stats and exit")
+	dbStatsPeriodHours = flag.Int("dbstatsperiod", 24, "period of db stats collection in hours, 0 disables stats collection")
 
 	// resync index at least each resyncIndexPeriodMs (could be more often if invoked by message from ZeroMQ)
 	resyncIndexPeriodMs = flag.Int("resyncindexperiod", 935093, "resync index period in milliseconds")
@@ -319,14 +318,8 @@ func main() {
 		}
 		height := uint32(*blockFrom)
 		until := uint32(*blockUntil)
-		address := *queryAddress
 
-		if address != "" {
-			if err = index.GetTransactions(address, height, until, printResult); err != nil {
-				glog.Error("GetTransactions ", err)
-				return
-			}
-		} else if !*synchronize {
+		if !*synchronize {
 			if err = syncWorker.ConnectBlocksParallel(height, until); err != nil {
 				glog.Error("connectBlocksParallel ", err)
 				return
@@ -467,13 +460,17 @@ func storeInternalStateLoop() {
 	}()
 	var computeRunning bool
 	lastCompute := time.Now()
-	// randomize the duration between ComputeInternalStateColumnStats to avoid peaks after reboot of machine with multiple blockbooks
-	computePeriod := 23*time.Hour + time.Duration(rand.Float64()*float64((4*time.Hour).Nanoseconds()))
 	lastAppInfo := time.Now()
 	logAppInfoPeriod := 15 * time.Minute
-	glog.Info("storeInternalStateLoop starting with db stats recompute period ", computePeriod)
+	// randomize the duration between ComputeInternalStateColumnStats to avoid peaks after reboot of machine with multiple blockbooks
+	computePeriod := time.Duration(*dbStatsPeriodHours)*time.Hour + time.Duration(rand.Float64()*float64((4*time.Hour).Nanoseconds()))
+	if (*dbStatsPeriodHours) > 0 {
+		glog.Info("storeInternalStateLoop starting with db stats recompute period ", computePeriod)
+	} else {
+		glog.Info("storeInternalStateLoop starting with db stats compute disabled")
+	}
 	tickAndDebounce(storeInternalStatePeriodMs*time.Millisecond, (storeInternalStatePeriodMs-1)*time.Millisecond, chanStoreInternalState, func() {
-		if !computeRunning && lastCompute.Add(computePeriod).Before(time.Now()) {
+		if (*dbStatsPeriodHours) > 0 && !computeRunning && lastCompute.Add(computePeriod).Before(time.Now()) {
 			computeRunning = true
 			go func() {
 				err := index.ComputeInternalStateColumnStats(stopCompute)
@@ -498,17 +495,17 @@ func storeInternalStateLoop() {
 	glog.Info("storeInternalStateLoop stopped")
 }
 
-func onNewTxAddr(txid string, desc bchain.AddressDescriptor, isOutput bool) {
+func onNewTxAddr(tx *bchain.Tx, desc bchain.AddressDescriptor) {
 	for _, c := range callbacksOnNewTxAddr {
-		c(txid, desc, isOutput)
+		c(tx, desc)
 	}
 }
 
 func pushSynchronizationHandler(nt bchain.NotificationType) {
+	glog.V(1).Info("MQ: notification ", nt)
 	if atomic.LoadInt32(&inShutdown) != 0 {
 		return
 	}
-	glog.V(1).Info("MQ: notification ", nt)
 	if nt == bchain.NotificationNewBlock {
 		chanSyncIndex <- struct{}{}
 	} else if nt == bchain.NotificationNewTx {
@@ -545,7 +542,7 @@ func waitForSignalAndShutdown(internal *server.InternalServer, public *server.Pu
 	}
 }
 
-func printResult(txid string, vout uint32, isOutput bool) error {
+func printResult(txid string, vout int32, isOutput bool) error {
 	glog.Info(txid, vout, isOutput)
 	return nil
 }
