@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 
 	"github.com/golang/glog"
+	"github.com/juju/errors"
 )
 
 // KumacoinRPC is an interface to JSON-RPC bitcoind service.
@@ -69,7 +70,8 @@ type ResGetInfo struct {
 	Result struct {
 		Version         json.Number `json:"version"`
 		ProtocolVersion json.Number `json:"protocolversion"`
-		Blocks          uint32      `json:"blocks"`
+		Blocks          int32       `json:"blocks"`
+		Difficulty      json.Number `json:"difficulty"`
 		Testnet         string      `json:"testnet"`
 		Errors          string      `json:"errors"`
 	} `json:"result"`
@@ -87,7 +89,7 @@ type CmdGetBlock struct {
 
 type ResGetBlock struct {
 	Error  *bchain.RPCError   `json:"error"`
-	Result bchain.Block `json:"result"`
+	Result bchain.BlockHeader `json:"result"`
 }
 
 // GetBestBlockHash returns hash of the tip of the best-block-chain.
@@ -148,6 +150,11 @@ func (b *KumacoinRPC) GetChainInfo() (*bchain.ChainInfo, error) {
 	return rv, nil
 }
 
+func IsErrBlockNotFound(err *bchain.RPCError) bool {
+	return err.Message == "Block not found" ||
+		err.Message == "Block height out of range"
+}
+
 // GetBlockHeader returns header of block with given hash.
 func (b *KumacoinRPC) GetBlockHeader(hash string) (*bchain.BlockHeader, error) {
 	glog.V(1).Info("rpc: getblock")
@@ -188,14 +195,20 @@ func (b *KumacoinRPC) GetBlock(hash string, height uint32) (*bchain.Block, error
 // EstimateSmartFee returns fee estimation
 func (b *KumacoinRPC) EstimateSmartFee(_ int, _ bool) (big.Int, error) {
 	var r big.Int
-	r = 20000
+	r, err = b.Parser.AmountToBigInt(20000)
+	if err != nil {
+		return r, err
+	}
 	return r, nil
 }
 
 // EstimateFee returns fee estimation.
 func (b *KumacoinRPC) EstimateFee(_ int) (big.Int, error) {
 	var r big.Int
-	r = 20000
+	r, err = b.Parser.AmountToBigInt(20000)
+	if err != nil {
+		return r, err
+	}
 	return r, nil
 }
 
