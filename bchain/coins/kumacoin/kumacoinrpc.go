@@ -55,3 +55,18 @@ func (b *KumacoinRPC) Initialize() error {
 
 	return nil
 }
+
+// GetBlock returns block with given hash.
+func (b *KumacoinRPC) GetBlock(hash string, height uint32) (*bchain.Block, error) {
+	var err error
+	if hash == "" {
+		hash, err = b.GetBlockHash(height)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !b.ParseBlocks {
+		return b.GetBlockFull(hash)
+	}
+	return b.GetBlockWithoutHeader(hash, height)
+}
