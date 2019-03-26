@@ -6,10 +6,10 @@
       "alias": "kumacoin_testnet"
   },
   "ports": {
-    "backend_rpc": 18046,
-    "backend_message_queue": 48346,
-    "blockbook_internal": 19046,
-    "blockbook_public": 19146
+    "backend_rpc": 18099,
+    "backend_message_queue": 48399,
+    "blockbook_internal": 19099,
+    "blockbook_public": 19199
   },
   "ipc": {
     "rpc_url_template": "http://127.0.0.1:{{.Ports.BackendRPC}}",
