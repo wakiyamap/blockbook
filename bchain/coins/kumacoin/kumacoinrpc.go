@@ -198,6 +198,6 @@ func (b *KumacoinRPC) EstimateFee(_ int) (big.Int, error) {
 }
 
 // GetMempoolEntry returns mempool data for given transaction
-func (b *LiquidRPC) GetMempoolEntry(txid string) (*bchain.MempoolEntry, error) {
+func (b *KumacoinRPC) GetMempoolEntry(txid string) (*bchain.MempoolEntry, error) {
 	return nil, errors.New("GetMempoolEntry: not implemented")
 }
