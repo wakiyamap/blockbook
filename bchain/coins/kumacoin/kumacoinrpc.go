@@ -1,6 +1,8 @@
 package kumacoin
 
 import (
+	"math/big"
+
 	"blockbook/bchain"
 	"blockbook/bchain/coins/btc"
 	"encoding/json"
@@ -67,7 +69,7 @@ type ResGetInfo struct {
 	Result struct {
 		Version         json.Number `json:"version"`
 		ProtocolVersion json.Number `json:"protocolversion"`
-		Timeoffset      float64     `json:"timeoffset"`
+		Blocks          uint32      `json:"blocks"`
 		Testnet         string      `json:"testnet"`
 		Errors          string      `json:"errors"`
 	} `json:"result"`
@@ -92,7 +94,7 @@ type ResGetBlock struct {
 func (b *KumacoinRPC) GetBestBlockHash() (string, error) {
 	glog.V(1).Info("rpc: getinfo")
 	res := ResGetInfo{}
-	err = b.Call(&CmdGetInfo{Method: "getinfo"}, &res)
+	err := b.Call(&CmdGetInfo{Method: "getinfo"}, &res)
 	if err != nil {
 		return "", err
 	}
@@ -112,7 +114,7 @@ func (b *KumacoinRPC) GetBestBlockHash() (string, error) {
 func (b *KumacoinRPC) GetChainInfo() (*bchain.ChainInfo, error) {
 	glog.V(1).Info("rpc: getinfo")
 	res := ResGetInfo{}
-	err = b.Call(&CmdGetInfo{Method: "getinfo"}, &res)
+	err := b.Call(&CmdGetInfo{Method: "getinfo"}, &res)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +135,7 @@ func (b *KumacoinRPC) GetChainInfo() (*bchain.ChainInfo, error) {
 		Headers:       res.Result.Blocks,
 		SizeOnDisk:    0,
 		Subversion:    string(res.Result.Version),
-		Timeoffset:    res.Result.Timeoffset,
+		Timeoffset:    0,
 	}
 	rv.Version = string(res.Result.Version)
 	rv.ProtocolVersion = string(res.Result.ProtocolVersion)
