@@ -131,10 +131,10 @@ func (b *KumacoinRPC) GetChainInfo() (*bchain.ChainInfo, error) {
 	
 	rv := &bchain.ChainInfo{
 		Bestblockhash: hash,
-		Blocks:        uint32(res.Result.Blocks),
+		Blocks:        int(res.Result.Blocks),
 		Chain:         res.Result.Testnet,
 		Difficulty:    string(res.Result.Difficulty),
-		Headers:       uint32(res.Result.Blocks),
+		Headers:       int(res.Result.Blocks),
 		SizeOnDisk:    0,
 		Subversion:    string(res.Result.Version),
 		Timeoffset:    0,
@@ -194,12 +194,16 @@ func (b *KumacoinRPC) GetBlock(hash string, height uint32) (*bchain.Block, error
 
 // EstimateSmartFee returns fee estimation
 func (b *KumacoinRPC) EstimateSmartFee(_ int, _ bool) (big.Int, error) {
-	return big.NewInt(20000), nil
+	var r big.Int
+	r.SetString("20000", 10)
+	return r, nil
 }
 
 // EstimateFee returns fee estimation.
 func (b *KumacoinRPC) EstimateFee(_ int) (big.Int, error) {
-	return big.NewInt(20000), nil
+	var r big.Int
+	r.SetString("20000", 10)
+	return r, nil
 }
 
 // GetMempoolEntry returns mempool data for given transaction
