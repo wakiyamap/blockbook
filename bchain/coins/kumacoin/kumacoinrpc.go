@@ -56,6 +56,118 @@ func (b *KumacoinRPC) Initialize() error {
 	return nil
 }
 
+// getinfo
+
+type CmdGetInfo struct {
+	Method string `json:"method"`
+}
+
+type ResGetInfo struct {
+	Error  *bchain.RPCError `json:"error"`
+	Result struct {
+		Version         json.Number `json:"version"`
+		ProtocolVersion json.Number `json:"protocolversion"`
+		Timeoffset      float64     `json:"timeoffset"`
+		Testnet         string      `json:"testnet"`
+		Errors          string      `json:"errors"`
+	} `json:"result"`
+}
+
+// getblockheader
+
+type CmdGetBlock struct {
+	Method string `json:"method"`
+	Params struct {
+		BlockHash string `json:"blockhash"`
+		Verbose   bool   `json:"verbose"`
+	} `json:"params"`
+}
+
+type ResGetBlock struct {
+	Error  *bchain.RPCError   `json:"error"`
+	Result bchain.Block `json:"result"`
+}
+
+// GetBestBlockHash returns hash of the tip of the best-block-chain.
+func (b *KumacoinRPC) GetBestBlockHash() (string, error) {
+	glog.V(1).Info("rpc: getinfo")
+	res := ResGetInfo{}
+	err = b.Call(&CmdGetInfo{Method: "getinfo"}, &res)
+	if err != nil {
+		return "", err
+	}
+	if res.Error != nil {
+		return "", res.Error
+	}
+
+	hash, err := b.GetBlockHash(res.Result.Blocks)
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
+
+}
+
+// GetChainInfo returns information about the connected backend
+func (b *KumacoinRPC) GetChainInfo() (*bchain.ChainInfo, error) {
+	glog.V(1).Info("rpc: getinfo")
+	res := ResGetInfo{}
+	err = b.Call(&CmdGetInfo{Method: "getinfo"}, &res)
+	if err != nil {
+		return nil, err
+	}
+	if res.Error != nil {
+		return nil, resI.Error
+	}
+
+	hash, err := b.GetBlockHash(res.Result.Blocks)
+	if err != nil {
+		return nil, err
+	}
+	
+	rv := &bchain.ChainInfo{
+		Bestblockhash: hash,
+		Blocks:        res.Result.Blocks,
+		Chain:         res.Result.Testnet,
+		Difficulty:    string(res.Result.Difficulty),
+		Headers:       res.Result.Blocks,
+		SizeOnDisk:    0,
+		Subversion:    string(res.Result.Version),
+		Timeoffset:    res.Result.Timeoffset,
+	}
+	rv.Version = string(res.Result.Version)
+	rv.ProtocolVersion = string(res.Result.ProtocolVersion)
+	if len(res.Result.Errors) > 0 {
+		rv.Warnings = res.Result.Errors + " "
+	}
+	if res.Result.Errors != res.Result.Errors {
+		rv.Warnings += res.Result.Errors
+	}
+	return rv, nil
+}
+
+// GetBlockHeader returns header of block with given hash.
+func (b *KumacoinRPC) GetBlockHeader(hash string) (*bchain.BlockHeader, error) {
+	glog.V(1).Info("rpc: getblock")
+
+	res := ResGetBlock{}
+	req := CmdGetBlock{Method: "getblock"}
+	req.Params.BlockHash = hash
+	req.Params.Verbose = true
+	err := b.Call(&req, &res)
+
+	if err != nil {
+		return nil, errors.Annotatef(err, "hash %v", hash)
+	}
+	if res.Error != nil {
+		if IsErrBlockNotFound(res.Error) {
+			return nil, bchain.ErrBlockNotFound
+		}
+		return nil, errors.Annotatef(res.Error, "hash %v", hash)
+	}
+	return &res.Result, nil
+}
+
 // GetBlock returns block with given hash.
 func (b *KumacoinRPC) GetBlock(hash string, height uint32) (*bchain.Block, error) {
 	var err error
@@ -69,4 +181,23 @@ func (b *KumacoinRPC) GetBlock(hash string, height uint32) (*bchain.Block, error
 		return b.GetBlockFull(hash)
 	}
 	return b.GetBlockWithoutHeader(hash, height)
+}
+
+// EstimateSmartFee returns fee estimation
+func (b *KumacoinRPC) EstimateSmartFee(_ int, _ bool) (big.Int, error) {
+	var r big.Int
+	r = 20000
+	return r, nil
+}
+
+// EstimateFee returns fee estimation.
+func (b *KumacoinRPC) EstimateFee(_ int) (big.Int, error) {
+	var r big.Int
+	r = 20000
+	return r, nil
+}
+
+// GetMempoolEntry returns mempool data for given transaction
+func (b *LiquidRPC) GetMempoolEntry(txid string) (*bchain.MempoolEntry, error) {
+	return nil, errors.New("GetMempoolEntry: not implemented")
 }
