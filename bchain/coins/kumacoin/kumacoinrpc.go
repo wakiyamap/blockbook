@@ -239,7 +239,7 @@ func (b *KumacoinRPC) GetBlock(hash string, height uint32) (*bchain.Block, error
 }
 
 // GetBlockInfo returns extended header (more info than in bchain.BlockHeader) with a list of txids
-func (b *BitcoinRPC) GetBlockInfo(hash string) (*bchain.BlockInfo, error) {
+func (b *KumacoinRPC) GetBlockInfo(hash string) (*bchain.BlockInfo, error) {
 	glog.V(1).Info("rpc: getblock (verbosity= ) ", hash)
 
 	res := ResGetBlockInfo{}
@@ -261,7 +261,7 @@ func (b *BitcoinRPC) GetBlockInfo(hash string) (*bchain.BlockInfo, error) {
 }
 
 // GetBlockRaw returns block with given hash as bytes
-func (b *BitcoinRPC) GetBlockRaw(hash string) ([]byte, error) {
+func (b *KumacoinRPC) GetBlockRaw(hash string) ([]byte, error) {
 	glog.V(1).Info("rpc: getblock (verbosity=false) ", hash)
 
 	res := ResGetBlockRaw{}
@@ -283,7 +283,7 @@ func (b *BitcoinRPC) GetBlockRaw(hash string) ([]byte, error) {
 }
 
 // GetBlockFull returns block with given hash
-func (b *BitcoinRPC) GetBlockFull(hash string) (*bchain.Block, error) {
+func (b *KumacoinRPC) GetBlockFull(hash string) (*bchain.Block, error) {
 	glog.V(1).Info("rpc: getblock (verbosity=true) ", hash)
 
 	res := ResGetBlockFull{}
