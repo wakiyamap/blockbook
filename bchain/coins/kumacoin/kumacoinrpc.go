@@ -92,11 +92,50 @@ type ResGetBlock struct {
 	Result bchain.BlockHeader `json:"result"`
 }
 
+// getblockcount
+
+type CmdGetBlockCount struct {
+	Method string `json:"method"`
+}
+
+type ResGetBlockCount struct {
+	Error  *bchain.RPCError `json:"error"`
+	Result uint32           `json:"result"`
+}
+
+// getblock
+
+type CmdGetBlock struct {
+	Method string `json:"method"`
+	Params struct {
+		BlockHash string `json:"blockhash"`
+		Verbosity string `json:"verbosity"`
+	} `json:"params"`
+}
+
+type ResGetBlockRaw struct {
+	Error  *bchain.RPCError `json:"error"`
+	Result string           `json:"result"`
+}
+
+type ResGetBlockFull struct {
+	Error  *bchain.RPCError `json:"error"`
+	Result bchain.Block     `json:"result"`
+}
+
+type ResGetBlockInfo struct {
+	Error  *bchain.RPCError `json:"error"`
+	Result bchain.BlockInfo `json:"result"`
+}
+
 // GetBestBlockHash returns hash of the tip of the best-block-chain.
 func (b *KumacoinRPC) GetBestBlockHash() (string, error) {
-	glog.V(1).Info("rpc: getinfo")
-	res := ResGetInfo{}
-	err := b.Call(&CmdGetInfo{Method: "getinfo"}, &res)
+	glog.V(1).Info("rpc: getblockcount")
+
+	res := ResGetBlockCount{}
+	req := CmdGetBlockCount{Method: "getblockcount"}
+	err := b.Call(&req, &res)
+
 	if err != nil {
 		return "", err
 	}
@@ -104,7 +143,7 @@ func (b *KumacoinRPC) GetBestBlockHash() (string, error) {
 		return "", res.Error
 	}
 
-	hash, err := b.GetBlockHash(uint32(res.Result.Blocks))
+	hash, err := b.GetBlockHash(res.Result)
 	if err != nil {
 		return "", err
 	}
@@ -124,7 +163,7 @@ func (b *KumacoinRPC) GetChainInfo() (*bchain.ChainInfo, error) {
 		return nil, res.Error
 	}
 
-	bestBlockHash, err := b.GetBlockHash(uint32(res.Result.Blocks))
+	bestBlockHash, err := b.GetBestBlockHash()
 	if err != nil {
 		return nil, err
 	}
@@ -197,6 +236,86 @@ func (b *KumacoinRPC) GetBlock(hash string, height uint32) (*bchain.Block, error
 		return b.GetBlockFull(hash)
 	}
 	return b.GetBlockWithoutHeader(hash, height)
+}
+
+// GetBlockInfo returns extended header (more info than in bchain.BlockHeader) with a list of txids
+func (b *BitcoinRPC) GetBlockInfo(hash string) (*bchain.BlockInfo, error) {
+	glog.V(1).Info("rpc: getblock (verbosity= ) ", hash)
+
+	res := ResGetBlockInfo{}
+	req := CmdGetBlock{Method: "getblock"}
+	req.Params.BlockHash = hash
+	// req.Params.Verbosity = ""
+	err := b.Call(&req, &res)
+
+	if err != nil {
+		return nil, errors.Annotatef(err, "hash %v", hash)
+	}
+	if res.Error != nil {
+		if IsErrBlockNotFound(res.Error) {
+			return nil, bchain.ErrBlockNotFound
+		}
+		return nil, errors.Annotatef(res.Error, "hash %v", hash)
+	}
+	return &res.Result, nil
+}
+
+// GetBlockRaw returns block with given hash as bytes
+func (b *BitcoinRPC) GetBlockRaw(hash string) ([]byte, error) {
+	glog.V(1).Info("rpc: getblock (verbosity=false) ", hash)
+
+	res := ResGetBlockRaw{}
+	req := CmdGetBlock{Method: "getblock"}
+	req.Params.BlockHash = hash
+	req.Params.Verbosity = false
+	err := b.Call(&req, &res)
+
+	if err != nil {
+		return nil, errors.Annotatef(err, "hash %v", hash)
+	}
+	if res.Error != nil {
+		if IsErrBlockNotFound(res.Error) {
+			return nil, bchain.ErrBlockNotFound
+		}
+		return nil, errors.Annotatef(res.Error, "hash %v", hash)
+	}
+	return hex.DecodeString(res.Result)
+}
+
+// GetBlockFull returns block with given hash
+func (b *BitcoinRPC) GetBlockFull(hash string) (*bchain.Block, error) {
+	glog.V(1).Info("rpc: getblock (verbosity=true) ", hash)
+
+	res := ResGetBlockFull{}
+	req := CmdGetBlock{Method: "getblock"}
+	req.Params.BlockHash = hash
+	req.Params.Verbosity = true
+	err := b.Call(&req, &res)
+
+	if err != nil {
+		return nil, errors.Annotatef(err, "hash %v", hash)
+	}
+	if res.Error != nil {
+		if IsErrBlockNotFound(res.Error) {
+			return nil, bchain.ErrBlockNotFound
+		}
+		return nil, errors.Annotatef(res.Error, "hash %v", hash)
+	}
+
+	for i := range res.Result.Txs {
+		tx := &res.Result.Txs[i]
+		for j := range tx.Vout {
+			vout := &tx.Vout[j]
+			// convert vout.JsonValue to big.Int and clear it, it is only temporary value used for unmarshal
+			vout.ValueSat, err = b.Parser.AmountToBigInt(vout.JsonValue)
+			if err != nil {
+				return nil, err
+			}
+			vout.JsonValue = ""
+		}
+	}
+
+	return &res.Result, nil
 }
 
 // EstimateSmartFee returns fee estimation
