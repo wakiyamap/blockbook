@@ -5,6 +5,7 @@ import (
 
 	"blockbook/bchain"
 	"blockbook/bchain/coins/btc"
+	"encoding/hex"
 	"encoding/json"
 
 	"github.com/golang/glog"
@@ -26,7 +27,7 @@ func NewKumacoinRPC(config json.RawMessage, pushHandler func(bchain.Notification
 	s := &KumacoinRPC{
 		b.(*btc.BitcoinRPC),
 	}
-	s.RPCMarshaler = btc.JSONMarshalerV2{}
+	s.RPCMarshaler = btc.JSONMarshalerV1{}
 	s.ChainConfig.SupportsEstimateFee = false
 
 	return s, nil
@@ -79,15 +80,15 @@ type ResGetInfo struct {
 
 // getblockheader
 
-type CmdGetBlock struct {
+type CmdGetBlockHeader struct {
 	Method string `json:"method"`
 	Params struct {
 		BlockHash string `json:"blockhash"`
-		Verbose   bool   `json:"verbose"`
+		Verbose   string `json:"verbose"`
 	} `json:"params"`
 }
 
-type ResGetBlock struct {
+type ResGetBlockHeader struct {
 	Error  *bchain.RPCError   `json:"error"`
 	Result bchain.BlockHeader `json:"result"`
 }
@@ -205,10 +206,10 @@ func IsErrBlockNotFound(err *bchain.RPCError) bool {
 func (b *KumacoinRPC) GetBlockHeader(hash string) (*bchain.BlockHeader, error) {
 	glog.V(1).Info("rpc: getblock")
 
-	res := ResGetBlock{}
-	req := CmdGetBlock{Method: "getblock"}
+	res := ResGetBlockHeader{}
+	req := CmdGetBlockHeader{Method: "getblock"}
 	req.Params.BlockHash = hash
-	req.Params.Verbose = true
+	req.Params.Verbose = "true"
 	err := b.Call(&req, &res)
 
 	if err != nil {
@@ -267,7 +268,7 @@ func (b *KumacoinRPC) GetBlockRaw(hash string) ([]byte, error) {
 	res := ResGetBlockRaw{}
 	req := CmdGetBlock{Method: "getblock"}
 	req.Params.BlockHash = hash
-	req.Params.Verbosity = false
+	req.Params.Verbosity = "false"
 	err := b.Call(&req, &res)
 
 	if err != nil {
@@ -289,7 +290,7 @@ func (b *KumacoinRPC) GetBlockFull(hash string) (*bchain.Block, error) {
 	res := ResGetBlockFull{}
 	req := CmdGetBlock{Method: "getblock"}
 	req.Params.BlockHash = hash
-	req.Params.Verbosity = true
+	req.Params.Verbosity = "true"
 	err := b.Call(&req, &res)
 
 	if err != nil {
