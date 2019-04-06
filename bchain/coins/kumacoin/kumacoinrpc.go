@@ -102,11 +102,6 @@ type CmdGetBlock struct {
 	} `json:"params"`
 }
 
-type ResGetBlockRaw struct {
-	Error  *bchain.RPCError `json:"error"`
-	Result string           `json:"result"`
-}
-
 type BlockThin struct {
 	bchain.BlockHeader
 	Txids  []string         `json:"tx"`
@@ -249,7 +244,7 @@ func (b *KumacoinRPC) GetBlockRaw(hash string) ([]byte, error) {
 	glog.V(1).Info("rpc: getblockraw", hash)
 
 	res := ResGetBlockRaw{}
-	req := CmdGetBlock{Method: "getblockraw"}
+	req := CmdGetBlockRaw{Method: "getblockraw"}
 	req.Params.BlockHash = hash
 	err := b.Call(&req, &res)
 
