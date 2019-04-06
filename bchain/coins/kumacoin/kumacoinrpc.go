@@ -78,17 +78,6 @@ type ResGetInfo struct {
 	} `json:"result"`
 }
 
-// getblockcount
-
-type CmdGetBlockCount struct {
-	Method string `json:"method"`
-}
-
-type ResGetBlockCount struct {
-	Error  *bchain.RPCError `json:"error"`
-	Result uint32           `json:"result"`
-}
-
 // getblockraw
 
 type CmdGetBlockRaw struct {
@@ -109,7 +98,7 @@ type CmdGetBlock struct {
 	Method string `json:"method"`
 	Params struct {
 		BlockHash string `json:"blockhash"`
-		Verbose   bool   `json:"verbosity"`
+		Verbose   bool   `json:"verbose"`
 	} `json:"params"`
 }
 
@@ -154,29 +143,6 @@ type ResGetRawTransaction struct {
 }
 
 
-// GetBestBlockHash returns hash of the tip of the best-block-chain.
-func (b *KumacoinRPC) GetBestBlockHash() (string, error) {
-	glog.V(1).Info("rpc: getblockcount")
-
-	res := ResGetBlockCount{}
-	req := CmdGetBlockCount{Method: "getblockcount"}
-	err := b.Call(&req, &res)
-
-	if err != nil {
-		return "", err
-	}
-	if res.Error != nil {
-		return "", res.Error
-	}
-
-	hash, err := b.GetBlockHash(res.Result)
-	if err != nil {
-		return "", err
-	}
-	return hash, nil
-
-}
-
 // GetChainInfo returns information about the connected backend
 func (b *KumacoinRPC) GetChainInfo() (*bchain.ChainInfo, error) {
 	glog.V(1).Info("rpc: getinfo")
@@ -189,7 +155,7 @@ func (b *KumacoinRPC) GetChainInfo() (*bchain.ChainInfo, error) {
 		return nil, res.Error
 	}
 
-	bestBlockHash, err := b.GetBestBlockHash()
+	bestBlockHash, err := b.GetBlockHash(uint32(res.Result.Blocks))
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +229,7 @@ func (b *KumacoinRPC) GetBlockInfo(hash string) (*bchain.BlockInfo, error) {
 	res := ResGetBlockInfo{}
 	req := CmdGetBlock{Method: "getblock"}
 	req.Params.BlockHash = hash
-	req.Params.Verbosity = false
+	req.Params.Verbose = false
 	err := b.Call(&req, &res)
 
 	if err != nil {
@@ -280,12 +246,11 @@ func (b *KumacoinRPC) GetBlockInfo(hash string) (*bchain.BlockInfo, error) {
 
 // GetBlockRaw returns block with given hash as bytes
 func (b *KumacoinRPC) GetBlockRaw(hash string) ([]byte, error) {
-	glog.V(1).Info("rpc: getblock (verbosity=false) ", hash)
+	glog.V(1).Info("rpc: getblockraw", hash)
 
 	res := ResGetBlockRaw{}
-	req := CmdGetBlock{Method: "getblock"}
+	req := CmdGetBlock{Method: "getblockraw"}
 	req.Params.BlockHash = hash
-	req.Params.Verbosity = "false"
 	err := b.Call(&req, &res)
 
 	if err != nil {
@@ -307,7 +272,7 @@ func (b *KumacoinRPC) GetBlockFull(hash string) (*bchain.Block, error) {
 	res := ResGetBlockFull{}
 	req := CmdGetBlock{Method: "getblock"}
 	req.Params.BlockHash = hash
-	req.Params.Verbosity = "true"
+	req.Params.Verbose = true
 	err := b.Call(&req, &res)
 
 	if err != nil {

@@ -144,30 +144,3 @@ func Test_UnpackTx(t *testing.T) {
 		})
 	}
 }
-
-type testBlock struct {
-	size int
-	time int64
-	txs  []string
-}
-
-var testParseBlockTxs = map[int]testBlock{
-	//PoS
-	2448782: {
-		size: 411,
-		time: 1554478837,
-		txs: []string{
-			"74d5d29ea8eb51b72c9c79cd3127a7aa4b3bfd233cf82624ae2770869cc82abd",
-			"e5c19f5c8bfa4bf5f2ae997bda372803191c742bc7b9e59817c654422d29fd6a",
-		},
-	},
-	//PoW
-	2448789: {
-		size: 288,
-		time: 1554479352,
-		txs: []string{
-			"6b25fa67e0318ce2d41665bb2f75376389e55f63dbfe7ae8d280d12728d4742b",
-		},
-	},
-}
-
