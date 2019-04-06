@@ -1,6 +1,7 @@
 package kumacoin
 
 import (
+	"blockbook/bchain"
 	"blockbook/bchain/coins/btc"
 
 	"github.com/martinboehm/btcd/wire"
@@ -34,11 +35,16 @@ func init() {
 // KumacoinParser handle
 type KumacoinParser struct {
 	*btc.BitcoinParser
+	baseparser                         *bchain.BaseParser
 }
 
 // NewKumacoinParser returns new KumacoinParser instance
 func NewKumacoinParser(params *chaincfg.Params, c *btc.Configuration) *KumacoinParser {
-	return &KumacoinParser{BitcoinParser: btc.NewBitcoinParser(params, c)}
+	p := &KumacoinParser{
+		BitcoinParser: btc.NewBitcoinParser(params, c),
+		baseparser:    &bchain.BaseParser{},
+	}
+	return p
 }
 
 // GetChainParams contains network parameters for the main Kumacoin network,
@@ -65,4 +71,13 @@ func GetChainParams(chain string) *chaincfg.Params {
 	default:
 		return &MainNetParams
 	}
+}
+
+func (p *KumacoinParser) PackTx(tx *bchain.Tx, height uint32, blockTime int64) ([]byte, error) {
+	return p.baseparser.PackTx(tx, height, blockTime)
+}
+
+// UnpackTx unpacks transaction from protobuf byte array
+func (p *KumacoinParser) UnpackTx(buf []byte) (*bchain.Tx, uint32, error) {
+	return p.baseparser.UnpackTx(buf)
 }

@@ -78,21 +78,6 @@ type ResGetInfo struct {
 	} `json:"result"`
 }
 
-// getblockheader
-
-type CmdGetBlockHeader struct {
-	Method string `json:"method"`
-	Params struct {
-		BlockHash string `json:"blockhash"`
-		Verbose   string `json:"verbose"`
-	} `json:"params"`
-}
-
-type ResGetBlockHeader struct {
-	Error  *bchain.RPCError   `json:"error"`
-	Result bchain.BlockHeader `json:"result"`
-}
-
 // getblockcount
 
 type CmdGetBlockCount struct {
@@ -104,19 +89,43 @@ type ResGetBlockCount struct {
 	Result uint32           `json:"result"`
 }
 
-// getblock
+// getblockraw
 
-type CmdGetBlock struct {
+type CmdGetBlockRaw struct {
 	Method string `json:"method"`
 	Params struct {
 		BlockHash string `json:"blockhash"`
-		Verbosity string `json:"verbosity"`
 	} `json:"params"`
 }
 
 type ResGetBlockRaw struct {
 	Error  *bchain.RPCError `json:"error"`
 	Result string           `json:"result"`
+}
+
+// getblock
+
+type CmdGetBlock struct {
+	Method string `json:"method"`
+	Params struct {
+		BlockHash string `json:"blockhash"`
+		Verbose   bool   `json:"verbosity"`
+	} `json:"params"`
+}
+
+type ResGetBlockRaw struct {
+	Error  *bchain.RPCError `json:"error"`
+	Result string           `json:"result"`
+}
+
+type BlockThin struct {
+	bchain.BlockHeader
+	Txids  []string         `json:"tx"`
+}
+
+type ResGetBlockThin struct {
+	Error  *bchain.RPCError `json:"error"`
+	Result BlockThin        `json:"result"`
 }
 
 type ResGetBlockFull struct {
@@ -128,6 +137,22 @@ type ResGetBlockInfo struct {
 	Error  *bchain.RPCError `json:"error"`
 	Result bchain.BlockInfo `json:"result"`
 }
+
+// getrawtransaction
+
+type CmdGetRawTransaction struct {
+	Method string `json:"method"`
+	Params struct {
+		Txid    string `json:"txid"`
+		Verbose int    `json:"verbose"`
+	} `json:"params"`
+}
+
+type ResGetRawTransaction struct {
+	Error  *bchain.RPCError `json:"error"`
+	Result json.RawMessage  `json:"result"`
+}
+
 
 // GetBestBlockHash returns hash of the tip of the best-block-chain.
 func (b *KumacoinRPC) GetBestBlockHash() (string, error) {
@@ -202,51 +227,43 @@ func IsErrBlockNotFound(err *bchain.RPCError) bool {
 		err.Message == "Block height out of range"
 }
 
-// GetBlockHeader returns header of block with given hash.
-func (b *KumacoinRPC) GetBlockHeader(hash string) (*bchain.BlockHeader, error) {
-	glog.V(1).Info("rpc: getblock")
-
-	res := ResGetBlockHeader{}
-	req := CmdGetBlockHeader{Method: "getblock"}
-	req.Params.BlockHash = hash
-	req.Params.Verbose = "true"
-	err := b.Call(&req, &res)
-
-	if err != nil {
-		return nil, errors.Annotatef(err, "hash %v", hash)
-	}
-	if res.Error != nil {
-		if IsErrBlockNotFound(res.Error) {
-			return nil, bchain.ErrBlockNotFound
-		}
-		return nil, errors.Annotatef(res.Error, "hash %v", hash)
-	}
-	return &res.Result, nil
-}
-
 // GetBlock returns block with given hash.
 func (b *KumacoinRPC) GetBlock(hash string, height uint32) (*bchain.Block, error) {
-	var err error
-	if hash == "" {
-		hash, err = b.GetBlockHash(height)
+	res := ResGetBlockThin{}
+	req := CmdGetBlock{Method: "getblock"}
+	req.Params.BlockHash = hash
+	req.Params.Verbose = false
+	err := b.Call(&req, &res)
 		if err != nil {
 			return nil, err
 		}
+	txs := make([]bchain.Tx, 0, len(res.Result.Txids))
+	for _, txid := range res.Result.Txids {
+		tx, err := b.GetTransaction(txid)
+		if err != nil {
+			if err == bchain.ErrTxNotFound {
+				glog.Errorf("rpc: getblock: skipping transanction in block %s due error: %s", hash, err)
+				continue
+			}
+			return nil, err
+		}
+		txs = append(txs, *tx)
 	}
-	if !b.ParseBlocks {
-		return b.GetBlockFull(hash)
+	block := &bchain.Block{
+		BlockHeader: res.Result.BlockHeader,
+		Txs:         txs,
 	}
-	return b.GetBlockWithoutHeader(hash, height)
+	return block, nil
 }
 
 // GetBlockInfo returns extended header (more info than in bchain.BlockHeader) with a list of txids
 func (b *KumacoinRPC) GetBlockInfo(hash string) (*bchain.BlockInfo, error) {
-	glog.V(1).Info("rpc: getblock (verbosity= ) ", hash)
+	glog.V(1).Info("rpc: getblock (verbosity=false) ", hash)
 
 	res := ResGetBlockInfo{}
 	req := CmdGetBlock{Method: "getblock"}
 	req.Params.BlockHash = hash
-	// req.Params.Verbosity = ""
+	req.Params.Verbosity = false
 	err := b.Call(&req, &res)
 
 	if err != nil {
@@ -331,6 +348,41 @@ func (b *KumacoinRPC) EstimateFee(_ int) (big.Int, error) {
 	var r big.Int
 	r.SetString("20000", 10)
 	return r, nil
+}
+
+func IsMissingTx(err *bchain.RPCError) bool {
+	if err.Code == -5 { // "No such mempool or blockchain transaction"
+		return true
+	}
+	return false
+}
+
+// getRawTransaction returns json as returned by backend, with all coin specific data
+func (b *KumacoinRPC) getRawTransaction(txid string) (json.RawMessage, error) {
+	glog.V(1).Info("rpc: getrawtransaction ", txid)
+
+	res := ResGetRawTransaction{}
+	req := CmdGetRawTransaction{Method: "getrawtransaction"}
+	req.Params.Txid = txid
+	req.Params.Verbose = 1
+	err := b.Call(&req, &res)
+
+	if err != nil {
+		return nil, errors.Annotatef(err, "txid %v", txid)
+	}
+	if res.Error != nil {
+		if IsMissingTx(res.Error) {
+			return nil, bchain.ErrTxNotFound
+		}
+		return nil, errors.Annotatef(res.Error, "txid %v", txid)
+	}
+	return res.Result, nil
+}
+
+// GetTransactionForMempool returns a transaction by the transaction ID
+// It could be optimized for mempool, i.e. without block time and confirmations
+func (b *KumacoinRPC) GetTransactionForMempool(txid string) (*bchain.Tx, error) {
+	return b.GetTransaction(txid)
 }
 
 // GetMempoolEntry returns mempool data for given transaction
