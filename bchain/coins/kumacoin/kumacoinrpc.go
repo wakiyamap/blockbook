@@ -33,10 +33,11 @@ func NewKumacoinRPC(config json.RawMessage, pushHandler func(bchain.Notification
 
 // Initialize initializes KumacoinRPC instance.
 func (b *KumacoinRPC) Initialize() error {
-	chainName, err := b.GetChainInfoAndInitializeMempool(b)
+	ci, err := b.GetChainInfo()
 	if err != nil {
 		return err
 	}
+	chainName := ci.Chain
 
 	glog.Info("Chain name ", chainName)
 	params := GetChainParams(chainName)
@@ -162,6 +163,7 @@ func (b *KumacoinRPC) GetBlock(hash string, height uint32) (*bchain.Block, error
 	req.Params.Verbose = false
 	err = b.Call(&req, &res)
 		if err != nil {
+			glog.Errorf("rpc: getblock: block: %s error: %v", hash, err)
 			return nil, err
 		}
 	txs := make([]bchain.Tx, 0, len(res.Result.Txids))
