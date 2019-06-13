@@ -45,6 +45,9 @@ func NewSyncWorker(db *RocksDB, chain bchain.BlockChain, syncWorkers, syncChunk 
 
 var errSynced = errors.New("synced")
 
+// ErrOperationInterrupted is returned when operation is interrupted by OS signal
+var ErrOperationInterrupted = errors.New("ErrOperationInterrupted")
+
 // ResyncIndex synchronizes index to the top of the blockchain
 // onNewBlock is called when new block is connected, but not in initial parallel sync
 func (w *SyncWorker) ResyncIndex(onNewBlock bchain.OnNewBlockFunc, initialSync bool) error {
@@ -75,7 +78,7 @@ func (w *SyncWorker) ResyncIndex(onNewBlock bchain.OnNewBlockFunc, initialSync b
 		return nil
 	}
 
-	w.metrics.IndexResyncErrors.With(common.Labels{"error": err.Error()}).Inc()
+	w.metrics.IndexResyncErrors.With(common.Labels{"error": "failure"}).Inc()
 
 	return err
 }
@@ -202,7 +205,8 @@ func (w *SyncWorker) connectBlocks(onNewBlock bchain.OnNewBlockFunc, initialSync
 		for {
 			select {
 			case <-w.chanOsSignal:
-				return errors.Errorf("connectBlocks interrupted at height %d", lastRes.block.Height)
+				glog.Info("connectBlocks interrupted at height ", lastRes.block.Height)
+				return ErrOperationInterrupted
 			case res := <-bch:
 				if res == empty {
 					break ConnectLoop
@@ -296,7 +300,7 @@ func (w *SyncWorker) ConnectBlocksParallel(lower, higher uint32) error {
 						return
 					}
 					glog.Error("getBlockWorker ", i, " connect block error ", err, ". Retrying...")
-					w.metrics.IndexResyncErrors.With(common.Labels{"error": err.Error()}).Inc()
+					w.metrics.IndexResyncErrors.With(common.Labels{"error": "failure"}).Inc()
 					time.Sleep(time.Millisecond * 500)
 				} else {
 					break
@@ -325,7 +329,8 @@ ConnectLoop:
 	for h := lower; h <= higher; {
 		select {
 		case <-w.chanOsSignal:
-			err = errors.Errorf("connectBlocksParallel interrupted at height %d", h)
+			glog.Info("connectBlocksParallel interrupted at height ", h)
+			err = ErrOperationInterrupted
 			// signal all workers to terminate their loops (error loops are interrupted below)
 			close(terminating)
 			break ConnectLoop
@@ -333,7 +338,7 @@ ConnectLoop:
 			hash, err = w.chain.GetBlockHash(h)
 			if err != nil {
 				glog.Error("GetBlockHash error ", err)
-				w.metrics.IndexResyncErrors.With(common.Labels{"error": err.Error()}).Inc()
+				w.metrics.IndexResyncErrors.With(common.Labels{"error": "failure"}).Inc()
 				time.Sleep(time.Millisecond * 500)
 				continue
 			}
