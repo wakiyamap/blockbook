@@ -101,17 +101,17 @@ func (a *Amount) AsInt64() int64 {
 
 // Vin contains information about single transaction input
 type Vin struct {
-	Txid       string                   `json:"txid,omitempty"`
-	Vout       uint32                   `json:"vout,omitempty"`
-	Sequence   int64                    `json:"sequence,omitempty"`
-	N          int                      `json:"n"`
-	AddrDesc   bchain.AddressDescriptor `json:"-"`
-	Addresses  []string                 `json:"addresses,omitempty"`
-	Searchable bool                     `json:"-"`
-	ValueSat   *Amount                  `json:"value,omitempty"`
-	Hex        string                   `json:"hex,omitempty"`
-	Asm        string                   `json:"asm,omitempty"`
-	Coinbase   string                   `json:"coinbase,omitempty"`
+	Txid      string                   `json:"txid,omitempty"`
+	Vout      uint32                   `json:"vout,omitempty"`
+	Sequence  int64                    `json:"sequence,omitempty"`
+	N         int                      `json:"n"`
+	AddrDesc  bchain.AddressDescriptor `json:"-"`
+	Addresses []string                 `json:"addresses,omitempty"`
+	IsAddress bool                     `json:"isAddress"`
+	ValueSat  *Amount                  `json:"value,omitempty"`
+	Hex       string                   `json:"hex,omitempty"`
+	Asm       string                   `json:"asm,omitempty"`
+	Coinbase  string                   `json:"coinbase,omitempty"`
 }
 
 // Vout contains information about single transaction output
@@ -126,7 +126,7 @@ type Vout struct {
 	Asm         string                   `json:"asm,omitempty"`
 	AddrDesc    bchain.AddressDescriptor `json:"-"`
 	Addresses   []string                 `json:"addresses"`
-	Searchable  bool                     `json:"-"`
+	IsAddress   bool                     `json:"isAddress"`
 	Type        string                   `json:"type,omitempty"`
 }
 
@@ -191,10 +191,19 @@ type Tx struct {
 	ValueInSat       *Amount           `json:"valueIn,omitempty"`
 	FeesSat          *Amount           `json:"fees,omitempty"`
 	Hex              string            `json:"hex,omitempty"`
+	Rbf              bool              `json:"rbf,omitempty"`
 	CoinSpecificData interface{}       `json:"-"`
 	CoinSpecificJSON json.RawMessage   `json:"-"`
 	TokenTransfers   []TokenTransfer   `json:"tokenTransfers,omitempty"`
 	EthereumSpecific *EthereumSpecific `json:"ethereumSpecific,omitempty"`
+}
+
+// FeeStats contains detailed block fee statistics
+type FeeStats struct {
+	TxCount         int       `json:"txCount"`
+	TotalFeesSat    *Amount   `json:"totalFeesSat"`
+	AverageFeePerKb int64     `json:"averageFeePerKb"`
+	DecilesFeePerKb [11]int64 `json:"decilesFeePerKb"`
 }
 
 // Paging contains information about paging for address, blocks and block
@@ -266,6 +275,7 @@ type Utxo struct {
 	Address       string  `json:"address,omitempty"`
 	Path          string  `json:"path,omitempty"`
 	Locktime      uint32  `json:"lockTime,omitempty"`
+	Coinbase      bool    `json:"coinbase,omitempty"`
 }
 
 // Utxos is array of Utxo

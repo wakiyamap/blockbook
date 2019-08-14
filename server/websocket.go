@@ -298,6 +298,10 @@ var requestHandlers = map[string]func(*WebsocketServer, *websocketChannel, *webs
 	"unsubscribeAddresses": func(s *WebsocketServer, c *websocketChannel, req *websocketReq) (rv interface{}, err error) {
 		return s.unsubscribeAddresses(c)
 	},
+	"ping": func(s *WebsocketServer, c *websocketChannel, req *websocketReq) (rv interface{}, err error) {
+		r := struct{}{}
+		return r, nil
+	},
 }
 
 func sendResponse(c *websocketChannel, req *websocketReq, data interface{}) {
@@ -357,6 +361,7 @@ type accountInfoReq struct {
 	FromHeight     int    `json:"from"`
 	ToHeight       int    `json:"to"`
 	ContractFilter string `json:"contractFilter"`
+	Gap            int    `json:"gap"`
 }
 
 func unmarshalGetAccountInfoRequest(params []byte) (*accountInfoReq, error) {
@@ -401,7 +406,7 @@ func (s *WebsocketServer) getAccountInfo(req *accountInfoReq) (res *api.Address,
 	if req.PageSize == 0 {
 		req.PageSize = txsOnPage
 	}
-	a, err := s.api.GetXpubAddress(req.Descriptor, req.Page, req.PageSize, opt, &filter, 0)
+	a, err := s.api.GetXpubAddress(req.Descriptor, req.Page, req.PageSize, opt, &filter, req.Gap)
 	if err != nil {
 		return s.api.GetAddress(req.Descriptor, req.Page, req.PageSize, opt, &filter)
 	}
