@@ -56,7 +56,7 @@
       "xpub_magic": 76067358,
       "xpub_magic_segwit_p2sh": 77429938,
       "xpub_magic_segwit_native": 78792518,
-      "slip44": 22,
+      "slip44": 504,
       "additional_params": {
         "fiat_rates": "coingecko",
         "fiat_rates_params": "{\"url\": \"https://api.coingecko.com/api/v3\", \"coin\": \"kumacoin\", \"periodSeconds\": 60}"
