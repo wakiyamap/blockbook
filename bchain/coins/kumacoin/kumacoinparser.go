@@ -33,16 +33,11 @@ func init() {
 // KumacoinParser handle
 type KumacoinParser struct {
 	*btc.BitcoinParser
-	baseparser                         *bchain.BaseParser
 }
 
 // NewKumacoinParser returns new KumacoinParser instance
 func NewKumacoinParser(params *chaincfg.Params, c *btc.Configuration) *KumacoinParser {
-	p := &KumacoinParser{
-		BitcoinParser: btc.NewBitcoinParser(params, c),
-		baseparser:    &bchain.BaseParser{},
-	}
-	return p
+	return &KumacoinParser{BitcoinParser: btc.NewBitcoinParser(params, c)}
 }
 
 // GetChainParams contains network parameters for the main Kumacoin network,
