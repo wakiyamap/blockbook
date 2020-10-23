@@ -200,13 +200,13 @@ func (b *KumacoinRPC) GetBlockInfo(hash string) (*bchain.BlockInfo, error) {
 	err := b.Call(&req, &res)
 
 	if err != nil {
-		return nil, errors.Annotatef(err, "hash %v", hash)
+		return nil, bchain.ErrBlockNotFound
 	}
 	if res.Error != nil {
 		if IsErrBlockNotFound(res.Error) {
 			return nil, bchain.ErrBlockNotFound
 		}
-		return nil, errors.Annotatef(res.Error, "hash %v", hash)
+		return nil, bchain.ErrBlockNotFound
 	}
 	return &res.Result, nil
 }
@@ -219,5 +219,5 @@ func (b *KumacoinRPC) GetTransactionForMempool(txid string) (*bchain.Tx, error) 
 
 // GetMempoolEntry returns mempool data for given transaction
 func (b *KumacoinRPC) GetMempoolEntry(txid string) (*bchain.MempoolEntry, error) {
-	return nil, errors.New("GetMempoolEntry: not implemented")
+	return nil, bchain.ErrTxNotFound
 }
