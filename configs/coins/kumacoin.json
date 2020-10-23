@@ -47,13 +47,20 @@
     "internal_binding_template": ":{{.Ports.BlockbookInternal}}",
     "public_binding_template": ":{{.Ports.BlockbookPublic}}",
     "explorer_url": "",
-    "additional_params": "-resyncindexperiod=30011 -resyncmempoolperiod=2011",
+    "additional_params": "-resyncindexperiod=100011 -resyncmempoolperiod=10011",
     "block_chain": {
       "parse": true,
       "mempool_workers": 8,
       "mempool_sub_workers": 2,
       "block_addresses_to_keep": 10000,
-      "additional_params": {}
+      "xpub_magic": 76067358,
+      "xpub_magic_segwit_p2sh": 77429938,
+      "xpub_magic_segwit_native": 78792518,
+      "slip44": 22,
+      "additional_params": {
+        "fiat_rates": "coingecko",
+        "fiat_rates_params": "{\"url\": \"https://api.coingecko.com/api/v3\", \"coin\": \"kumacoin\", \"periodSeconds\": 60}"
+      }
     }
   },
   "meta": {
