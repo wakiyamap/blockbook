@@ -66,11 +66,11 @@ func GetChainParams(chain string) *chaincfg.Params {
 	}
 }
 
-func (p *KumacoinParser) PackTx(tx *bchain.Tx, height uint32, blockTime int64) ([]byte, error) {
-	return p.baseparser.PackTx(tx, height, blockTime)
-}
+//func (p *KumacoinParser) PackTx(tx *bchain.Tx, height uint32, blockTime int64) ([]byte, error) {
+//	return p.baseparser.PackTx(tx, height, blockTime)
+//}
 
 // UnpackTx unpacks transaction from protobuf byte array
-func (p *KumacoinParser) UnpackTx(buf []byte) (*bchain.Tx, uint32, error) {
-	return p.baseparser.UnpackTx(buf)
-}
+//func (p *KumacoinParser) UnpackTx(buf []byte) (*bchain.Tx, uint32, error) {
+//	return p.baseparser.UnpackTx(buf)
+//}
