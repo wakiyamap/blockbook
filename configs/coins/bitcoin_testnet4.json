@@ -22,10 +22,10 @@
         "package_name": "backend-bitcoin-testnet4",
         "package_revision": "satoshilabs-1",
         "system_user": "bitcoin",
-        "version": "28.0rc1",
-        "binary_url": "https://bafybeig6qhnmj5yin7ytovdrv43gjogqa4ig3tv6tjfcvv63ifzrvb4rri.ipfs.flk-ipfs.xyz/bitcoin_28rc1.tar.gz",
+        "version": "28.0",
+        "binary_url": "https://bitcoincore.org/bin/bitcoin-core-28.0/bitcoin-28.0-x86_64-linux-gnu.tar.gz",
         "verification_type": "sha256",
-        "verification_source": "f3b67f5fb7902c3d0f059c8f49ef57c84e108dd597875e7253c84a12443c62f2",
+        "verification_source": "7fe294b02b25b51acb8e8e0a0eb5af6bbafa7cd0c5b0e5fcbb61263104a82fbc",
         "extract_command": "tar -C backend --strip 1 -xf",
         "exclude_files": [],
         "exec_command_template": "{{.Env.BackendInstallPath}}/{{.Coin.Alias}}/bin/bitcoind -datadir={{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend -conf={{.Env.BackendInstallPath}}/{{.Coin.Alias}}/{{.Coin.Alias}}.conf -pid=/run/{{.Coin.Alias}}/{{.Coin.Alias}}.pid",
@@ -40,6 +40,12 @@
         "additional_params": {
             "deprecatedrpc": "estimatefee",
             "deprecatedrpc": "warnings"
+        },
+        "platforms": {
+            "arm64": {
+                "binary_url": "https://bitcoincore.org/bin/bitcoin-core-28.0/bitcoin-28.0-aarch64-linux-gnu.tar.gz",
+                "verification_source": "7fa582d99a25c354d23e371a5848bd9e6a79702870f9cbbf1292b86e647d0f4e"
+            }
         }
     },
     "blockbook": {
