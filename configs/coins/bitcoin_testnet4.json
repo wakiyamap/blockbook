@@ -39,7 +39,7 @@
         "client_config_file": "bitcoin_client.conf",
         "additional_params": {
             "deprecatedrpc": "estimatefee",
-            "deprecatedrpc": "warnings",
+            "deprecatedrpc": "warnings"
         }
     },
     "blockbook": {
