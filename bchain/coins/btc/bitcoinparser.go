@@ -24,6 +24,9 @@ var (
 func init() {
 	TestNet4Params = chaincfg.TestNet3Params
 	TestNet4Params.Net = Testnet4Magic
+	TestNet4Params.PubKeyHashAddrID = []byte{111}
+	TestNet4Params.ScriptHashAddrID = []byte{117}
+	TestNet4Params.Bech32HRPSegwit = "tb"
 }
 
 // BitcoinParser handle
