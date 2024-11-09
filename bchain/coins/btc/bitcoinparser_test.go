@@ -682,7 +682,7 @@ func TestPackTx(t *testing.T) {
 				tx:        testTx4,
 				height:    41657,
 				blockTime: 1724927392,
-				parser:    NewBitcoinParser(GetChainParams("test4"), &Configuration{}),
+				parser:    NewBitcoinParser(GetChainParams("testnet4"), &Configuration{}),
 			},
 			want:    testTxPacked4,
 			wantErr: false,
@@ -749,7 +749,7 @@ func TestUnpackTx(t *testing.T) {
 			name: "testnet4-1",
 			args: args{
 				packedTx: testTxPacked4,
-				parser:   NewBitcoinParser(GetChainParams("test4"), &Configuration{}),
+				parser:   NewBitcoinParser(GetChainParams("testnet4"), &Configuration{}),
 			},
 			want:    &testTx4,
 			want1:   41657,
