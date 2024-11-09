@@ -53,7 +53,7 @@ func GetChainParams(chain string) *chaincfg.Params {
 	switch chain {
 	case "test":
 		return &chaincfg.TestNet3Params
-	case "test4":
+	case "testnet4":
 		return &TestNet4Params
 	case "regtest":
 		return &chaincfg.RegressionNetParams
